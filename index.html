@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JARVIS</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    font-family: 'Courier New', monospace;
+    overflow: hidden;
+    color: #00d4ff;
+  }
+
+  .container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 30px;
+  }
+
+  .label {
+    font-size: 11px;
+    letter-spacing: 6px;
+    color: #00d4ff55;
+    text-transform: uppercase;
+  }
+
+  /* Face */
+  .face-wrapper {
+    position: relative;
+    width: 220px;
+    height: 220px;
+  }
+
+  .ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid #00d4ff22;
+    animation: spin linear infinite;
+  }
+  .ring-1 { width: 220px; height: 220px; top: 0; left: 0; animation-duration: 12s; border-top-color: #00d4ff66; }
+  .ring-2 { width: 190px; height: 190px; top: 15px; left: 15px; animation-duration: 8s; animation-direction: reverse; border-right-color: #00d4ff44; }
+  .ring-3 { width: 160px; height: 160px; top: 30px; left: 30px; animation-duration: 5s; border-bottom-color: #00d4ff33; }
+
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+  .face {
+    position: absolute;
+    width: 130px;
+    height: 130px;
+    top: 45px;
+    left: 45px;
+    background: radial-gradient(circle at 40% 35%, #001a2e, #000810);
+    border-radius: 50%;
+    border: 1px solid #00d4ff33;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+  }
+
+  .eyes {
+    display: flex;
+    gap: 22px;
+    margin-top: -6px;
+  }
+
+  .eye {
+    width: 18px;
+    height: 7px;
+    background: #00d4ff;
+    border-radius: 50%;
+    box-shadow: 0 0 8px #00d4ff, 0 0 20px #00d4ff44;
+    transition: height 0.1s, transform 0.3s;
+  }
+
+  .eye.blink { height: 1px; }
+  .eye.thinking { transform: scaleX(0.6); opacity: 0.5; }
+
+  .mouth-container {
+    width: 50px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+  }
+
+  .mouth-bar {
+    width: 4px;
+    background: #00d4ff;
+    border-radius: 2px;
+    box-shadow: 0 0 6px #00d4ff;
+    transition: height 0.08s ease;
+    height: 2px;
+  }
+
+  /* Status */
+  .status {
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: #00d4ff88;
+    text-transform: uppercase;
+    min-height: 14px;
+  }
+
+  /* Transcript */
+  .transcript-box {
+    width: 340px;
+    min-height: 60px;
+    background: #00d4ff08;
+    border: 1px solid #00d4ff22;
+    border-radius: 4px;
+    padding: 14px 16px;
+    font-size: 12px;
+    line-height: 1.7;
+    color: #00d4ffcc;
+    text-align: center;
+  }
+
+  /* Button */
+  .mic-btn {
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    border: 1px solid #00d4ff55;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    position: relative;
+  }
+
+  .mic-btn:hover { border-color: #00d4ff; box-shadow: 0 0 16px #00d4ff33; }
+  .mic-btn.active { border-color: #ff4444; box-shadow: 0 0 20px #ff444444; }
+  .mic-btn.active .pulse { animation: pulse 1s ease-out infinite; }
+
+  .pulse {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 1px solid #ff4444;
+    opacity: 0;
+  }
+
+  @keyframes pulse {
+    0% { transform: scale(1); opacity: 0.6; }
+    100% { transform: scale(1.8); opacity: 0; }
+  }
+
+  svg { width: 20px; height: 20px; }
+
+  .bottom-row {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .mic-label {
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: #00d4ff44;
+    text-transform: uppercase;
+  }
+
+  /* Scanline overlay */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, #00000008 2px, #00000008 4px);
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="label">J.A.R.V.I.S</div>
+
+  <div class="face-wrapper">
+    <div class="ring ring-1"></div>
+    <div class="ring ring-2"></div>
+    <div class="ring ring-3"></div>
+    <div class="face">
+      <div class="eyes">
+        <div class="eye" id="eye-l"></div>
+        <div class="eye" id="eye-r"></div>
+      </div>
+      <div class="mouth-container" id="mouth"></div>
+    </div>
+  </div>
+
+  <div class="status" id="status">STANDBY</div>
+
+  <div class="transcript-box" id="transcript">Press the mic and speak.</div>
+
+  <div class="bottom-row">
+    <button class="mic-btn" id="micBtn" onclick="toggleListen()">
+      <div class="pulse"></div>
+      <svg viewBox="0 0 24 24" fill="none" stroke="#00d4ff" stroke-width="1.5">
+        <rect x="9" y="2" width="6" height="12" rx="3"/>
+        <path d="M5 10a7 7 0 0 0 14 0"/>
+        <line x1="12" y1="19" x2="12" y2="22"/>
+        <line x1="8" y1="22" x2="16" y2="22"/>
+      </svg>
+    </button>
+    <div class="mic-label" id="micLabel">tap to speak</div>
+  </div>
+</div>
+
+<script>
+  // --- Mouth bars setup ---
+  const mouth = document.getElementById('mouth');
+  const BAR_COUNT = 7;
+  const bars = [];
+  for (let i = 0; i < BAR_COUNT; i++) {
+    const b = document.createElement('div');
+    b.className = 'mouth-bar';
+    mouth.appendChild(b);
+    bars.push(b);
+  }
+
+  // --- Blink ---
+  function blink() {
+    document.getElementById('eye-l').classList.add('blink');
+    document.getElementById('eye-r').classList.add('blink');
+    setTimeout(() => {
+      document.getElementById('eye-l').classList.remove('blink');
+      document.getElementById('eye-r').classList.remove('blink');
+    }, 120);
+  }
+  setInterval(blink, 3500 + Math.random() * 2000);
+
+  // --- Mouth animation ---
+  let mouthAnim = null;
+  function animateMouth(active) {
+    clearInterval(mouthAnim);
+    if (!active) {
+      bars.forEach(b => b.style.height = '2px');
+      return;
+    }
+    const heights = [2, 4, 8, 12, 8, 4, 2];
+    mouthAnim = setInterval(() => {
+      bars.forEach((b, i) => {
+        const jitter = active ? (Math.random() * 10) : 0;
+        b.style.height = (heights[i] + jitter) + 'px';
+      });
+    }, 80);
+  }
+
+  // --- State ---
+  let listening = false;
+  let recognition = null;
+  let synth = window.speechSynthesis;
+
+  function setStatus(text) {
+    document.getElementById('status').textContent = text;
+  }
+
+  function setTranscript(text) {
+    document.getElementById('transcript').textContent = text;
+  }
+
+  function setEyeState(state) {
+    const el = document.getElementById('eye-l');
+    const er = document.getElementById('eye-r');
+    el.classList.remove('thinking');
+    er.classList.remove('thinking');
+    if (state === 'thinking') {
+      el.classList.add('thinking');
+      er.classList.add('thinking');
+    }
+  }
+
+  // --- Simple response logic ---
+  function getResponse(input) {
+    const t = input.toLowerCase();
+    if (t.includes('hello') || t.includes('hi') || t.includes('bonjour'))
+      return "Good day. I am online and ready to assist you.";
+    if (t.includes('your name') || t.includes('who are you') || t.includes('tu es qui'))
+      return "I am JARVIS. Just A Rather Very Intelligent System. At your service.";
+    if (t.includes('time') || t.includes('heure'))
+      return "The current time is " + new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    if (t.includes('date') || t.includes('today') || t.includes('aujourd'))
+      return "Today is " + new Date().toLocaleDateString('en-GB', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+    if (t.includes('weather') || t.includes('météo'))
+      return "I don't have live weather access yet, but Barcelona usually looks good.";
+    if (t.includes('nauxilia'))
+      return "Nauxilia is progressing well. Keep building.";
+    if (t.includes('joke') || t.includes('blague'))
+      return "I am an AI, not a comedian. But I appreciate the attempt at rapport.";
+    if (t.includes('thank') || t.includes('merci'))
+      return "Always a pleasure.";
+    if (t.includes('stop') || t.includes('bye') || t.includes('au revoir'))
+      return "Understood. Going to standby mode.";
+    return "Interesting input. In a full build, I would route that to Claude for a proper response.";
+  }
+
+  function speak(text) {
+    synth.cancel();
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.rate = 0.92;
+    utter.pitch = 0.8;
+    utter.volume = 1;
+
+    // Try to pick a deep voice
+    const voices = synth.getVoices();
+    const preferred = voices.find(v => v.name.includes('Google UK English Male'))
+      || voices.find(v => v.lang === 'en-GB' && v.name.toLowerCase().includes('male'))
+      || voices.find(v => v.lang === 'en-GB')
+      || voices.find(v => v.lang.startsWith('en'));
+    if (preferred) utter.voice = preferred;
+
+    utter.onstart = () => { animateMouth(true); setStatus('SPEAKING'); };
+    utter.onend = () => {
+      animateMouth(false);
+      setStatus('STANDBY');
+      setEyeState('normal');
+    };
+    synth.speak(utter);
+  }
+
+  function toggleListen() {
+    if (listening) {
+      stopListening();
+    } else {
+      startListening();
+    }
+  }
+
+  function startListening() {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      setTranscript('Speech recognition not supported in this browser. Try Chrome.');
+      return;
+    }
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognition = new SR();
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => {
+      listening = true;
+      document.getElementById('micBtn').classList.add('active');
+      document.getElementById('micLabel').textContent = 'listening...';
+      setStatus('LISTENING');
+      animateMouth(false);
+    };
+
+    recognition.onresult = (e) => {
+      const said = e.results[0][0].transcript;
+      setTranscript('"' + said + '"');
+      setEyeState('thinking');
+      setStatus('PROCESSING');
+
+      setTimeout(() => {
+        const reply = getResponse(said);
+        setTranscript(reply);
+        speak(reply);
+      }, 600);
+    };
+
+    recognition.onerror = (e) => {
+      setStatus('ERROR — TRY AGAIN');
+      stopListening();
+    };
+
+    recognition.onend = () => { stopListening(); };
+    recognition.start();
+  }
+
+  function stopListening() {
+    listening = false;
+    if (recognition) recognition.stop();
+    document.getElementById('micBtn').classList.remove('active');
+    document.getElementById('micLabel').textContent = 'tap to speak';
+    if (document.getElementById('status').textContent === 'LISTENING') setStatus('STANDBY');
+  }
+
+  // Preload voices
+  window.speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
+</script>
+</body>
+</html>
